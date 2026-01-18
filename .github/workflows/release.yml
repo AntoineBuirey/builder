@@ -1,0 +1,100 @@
+name: Release
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+    
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: latest
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+    
+    - name: Install dependencies
+      run: poetry install --no-interaction --with dev
+    
+    - name: Run tests with coverage
+      run: |
+        poetry run pytest tests/ -v --cov=src/builder --cov-report=term-missing --cov-report=html --cov-report=xml
+    
+    - name: Generate coverage summary
+      id: coverage
+      run: |
+        COVERAGE=$(poetry run coverage report | tail -n 1 | awk '{print $NF}')
+        echo "percentage=$COVERAGE" >> $GITHUB_OUTPUT
+        
+        # Create coverage summary for release notes
+        echo "## Test Coverage" > coverage_summary.md
+        echo "" >> coverage_summary.md
+        echo "Coverage: **$COVERAGE**" >> coverage_summary.md
+        echo "" >> coverage_summary.md
+        echo "\`\`\`" >> coverage_summary.md
+        poetry run coverage report >> coverage_summary.md
+        echo "\`\`\`" >> coverage_summary.md
+    
+    - name: Build package
+      run: |
+        poetry build
+    
+    - name: Update release description with coverage
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        RELEASE_ID=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+          "https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ github.event.release.tag_name }}" | \
+          jq -r '.id')
+        
+        CURRENT_BODY=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+          "https://api.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID" | \
+          jq -r '.body')
+        
+        COVERAGE_TEXT=$(cat coverage_summary.md)
+        
+        NEW_BODY=$(cat <<EOF
+        $CURRENT_BODY
+        
+        ---
+        
+        $COVERAGE_TEXT
+        EOF
+        )
+        
+        curl -X PATCH \
+          -H "Authorization: token $GITHUB_TOKEN" \
+          -H "Content-Type: application/json" \
+          "https://api.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID" \
+          -d "$(jq -n --arg body "$NEW_BODY" '{body: $body}')"
+    
+    - name: Upload built packages to release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        for file in dist/*; do
+          gh release upload ${{ github.event.release.tag_name }} "$file" --clobber
+        done
+    
+    - name: Archive coverage report
+      run: |
+        tar -czf coverage-report.tar.gz htmlcov/
+    
+    - name: Upload coverage report to release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release upload ${{ github.event.release.tag_name }} coverage-report.tar.gz --clobber
+    
