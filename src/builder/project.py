@@ -4,9 +4,9 @@ import os
 import sys
 import subprocess as sp
 from typing import Any
+import re
 
 from gamuLogger import Logger
-Logger.set_module('project')
 
 from .rule import Rule
 
@@ -21,21 +21,25 @@ def load_pyproject_toml(filepath) -> dict[str, Any]:
 
 
 class Project:
-    def __init__(self, config_file : str):
-        self.config_file = config_file
+    def __init__(self, config_file : str, cl_variables: dict[str, str] = {}):
+        self.config_file = os.path.abspath(config_file)
+        
+        Logger.info(f'Loading project configuration from: \033[33m{self.config_file}\033[0m')
+        
         config = self.__load_config()
         
-        project_dir = os.path.dirname(config_file)
+        project_dir = os.path.dirname(self.config_file)
         pyproject_path = os.path.join(project_dir, 'pyproject.toml')
         
-        variables = {
+        variables = { # Add default variables
             'PROJECT_DIR': project_dir,
             'PYTHON': sys.executable
         }
         
         self.vars = load_pyproject_toml(pyproject_path)
-        self.vars.update(config.get('vars', {}))
-        self.vars.update(variables)
+        self.vars.update(config.get('vars', {})) # variables from config file, can override pyproject.toml variables
+        self.vars.update(variables) # builtin variables have priority over config file
+        self.vars.update(cl_variables)  # Command line variables have highest priority
         self.__resolve_all_variables()
         
         self.files_groups = config.get('files-groups', {})
@@ -77,7 +81,7 @@ class Project:
                 Logger.debug(f'Running command: \033[33m{command}\033[0m')
                 try:
                     result = sp.check_output(command, shell=True, text=True, stderr=sp.PIPE).strip()
-                    Logger.debug(f'Command output: \033[32m{result}\033[0m')
+                    Logger.debug(f'Command output: \033[32m{result.strip()}\033[0m')
                     value = value[:start_idx] + result + value[end_idx + 1:]
                 except sp.CalledProcessError as e:
                     Logger.error(f'{e}')
@@ -111,10 +115,22 @@ class Project:
             summary += rule.get_summary() + "\n"
         return summary
     
-
-    def run(self):
-        """Run all rules in the project."""
+    
+    def select_rules(self, names_patterns : list[str], tags : list[str]) -> list[Rule]:
+        """Select rules by names or tags."""
+        selected_rules = []
         for rule in self.rules.values():
+            name_match = not names_patterns or any(re.fullmatch(pattern, rule.name) for pattern in names_patterns)
+            tag_match = not tags or any(tag in rule.tags for tag in tags)
+            if name_match and tag_match:
+                selected_rules.append(rule)
+                Logger.debug(f'Selected rule: \033[33m{rule.name}\033[0m')
+        return selected_rules
+    
+
+    def run(self, rules : list[Rule], force : bool = False):
+        """Run the specified rules."""
+        for rule in rules:
             Logger.info(f'Running rule: \033[33m{rule.name}\033[0m')
-            rule.execute()
-        Logger.info('Project build completed successfully.')
+            rule.execute(force)
+        Logger.info('All done.')

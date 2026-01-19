@@ -439,7 +439,7 @@ rules:
         # Mock the execute method of rules
         with patch.object(project.rules['rule1'], 'execute') as mock_exec1:
             with patch.object(project.rules['rule2'], 'execute') as mock_exec2:
-                project.run()
+                project.run(rules=[project.rules['rule1'], project.rules['rule2']])
                 mock_exec1.assert_called_once()
                 mock_exec2.assert_called_once()
     
@@ -474,14 +474,14 @@ rules:
         execution_order = []
         
         def track_execution(name):
-            def execute():
+            def execute(force: bool = False):
                 execution_order.append(name)
             return execute
         
         with patch.object(project.rules['first'], 'execute', side_effect=track_execution('first')):
             with patch.object(project.rules['second'], 'execute', side_effect=track_execution('second')):
                 with patch.object(project.rules['third'], 'execute', side_effect=track_execution('third')):
-                    project.run()
+                    project.run(rules=[project.rules['first'], project.rules['second'], project.rules['third']])
         
         assert len(execution_order) == 3
     
@@ -500,7 +500,7 @@ rules: {}
         
         with patch('builder.project.Logger'):
             project = Project(str(config_file))
-            project.run()  # Should not raise any errors
+            project.run(rules=[])  # Should not raise any errors
 
 
 class TestProjectLoadConfig:

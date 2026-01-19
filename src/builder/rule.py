@@ -4,7 +4,6 @@ from typing import Any
 import subprocess as sp
 
 from gamuLogger import Logger
-Logger.set_module('rule')
 
 def is_pattern(s : str) -> bool:
     """Check if a string is a pattern (contains wildcard characters)."""
@@ -86,10 +85,10 @@ class Rule:
         """Execute the commands defined in the rule."""
 
         for cmd in self.commands:
-            Logger.info(f'Executing command: \033[33m{cmd}\033[0m')
+            Logger.debug(f'Executing command: \033[30m{cmd}\033[0m')
             try:
                 result = sp.run(cmd, shell=True, check=True, text=True, stdout=sp.PIPE, stderr=sp.PIPE)
-                Logger.debug(f'Command output:\n\033[32m{result.stdout}\033[0m')
+                Logger.debug(f'Command output:\n\033[32m{result.stdout.strip()}\033[0m')
             except sp.CalledProcessError as e:
                 Logger.error(f'Command failed with return code {e.returncode}:\n\033[31m{e.stderr}\033[0m')
                 raise RuntimeError(f'Command failed: {cmd}') from e
@@ -102,7 +101,7 @@ class Rule:
             for f in missing_files:
                 Logger.warning(f'  - {f}')
             return False
-        Logger.info(f'All required files are present for rule {self.name}.')
+        Logger.debug(f'All required files are present for rule {self.name}.')
         return True
     
 
@@ -112,7 +111,7 @@ class Rule:
         if missing_files:
             Logger.warning(f'Missing expected files for rule {self.name}:\n\t- {'\n\t- '.join(missing_files)}')
             return False
-        Logger.info(f'All expected files are present for rule {self.name}.')
+        Logger.debug(f'All expected files are present for rule {self.name}.')
         return True
     
     
@@ -136,12 +135,12 @@ class Rule:
         return last_required > last_expected
     
     
-    def execute(self):
+    def execute(self, force: bool = False):
         """Execute the rule: check required files, run commands, check expected files."""
         if not self.__check_required_files():
             raise RuntimeError(f'Cannot execute rule {self.name}: missing required files.')
         
-        if not self.__must_be_rerun():
+        if not force and not self.__must_be_rerun():
             Logger.info(f'Rule {self.name} is up to date; skipping execution.')
             return
         
@@ -149,3 +148,4 @@ class Rule:
         
         if not self.__check_expected_files():
             raise RuntimeError(f'Rule {self.name} execution failed: expected files not found.')
+        Logger.info(f'Rule {self.name} executed successfully.')

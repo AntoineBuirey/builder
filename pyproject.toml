@@ -12,6 +12,9 @@ dependencies = [
     "gamulogger (>=3.2.6,<4.0.0)"
 ]
 
+[project.scripts]
+builder = "builder.main:main"
+
 [tool.poetry]
 packages = [{include = "builder", from = "src"}]
 
