@@ -1,6 +1,6 @@
 [project]
 name = "builder"
-version = "1.0.0"
+version = "1.0.1"
 description = ""
 authors = [
     {name = "Antoine",email = "91411073+T0ine34@users.noreply.github.com"}
