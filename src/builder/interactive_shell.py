@@ -86,10 +86,7 @@ class InteractiveShell(cmd.Cmd):
             print("\nProject Variables:")
             print("-" * 50)
             for key, value in self.project.get_all_vars().items():
-                if isinstance(value, (str, int, float, bool)):
-                    print(f"{key:<30} = {value}")
-                else:
-                    print(f"{key:<30} = {type(value).__name__} object")
+                print(f"{key:<30} = {value}")
         else:
             var_name = arg.strip()
             if var_name in self.project.vars:

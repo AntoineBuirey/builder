@@ -69,9 +69,8 @@ class Rule:
 
         Logger.info(f'Executing commands for rule {self.name}...')
         original_wd = os.getcwd()
-        if self.working_directory:
-            os.chdir(self.working_directory)
-            Logger.debug(f'Changed working directory to: {self.working_directory}')
+        os.chdir(self.working_directory)
+        Logger.debug(f'Changed working directory to: {self.working_directory}')
 
         try:
             for cmd in self.commands:

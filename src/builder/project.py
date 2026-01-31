@@ -10,7 +10,7 @@ from gamuLogger import Logger
 from .rule import Rule
 from .uses import load_project_file, is_project_file
 
-from .utils import apply_variables, flatten, list2str
+from .utils import flatten, list2str
 
 
 
