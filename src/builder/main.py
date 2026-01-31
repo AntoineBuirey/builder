@@ -5,7 +5,8 @@ import argparse
 from gamuLogger import Logger, config_argparse, config_logger
 
 from .project import Project
-
+from .interactive_shell import InteractiveShell
+        
 def main():
     argparser = argparse.ArgumentParser(description='Build automation tool.')
     argparser.add_argument('--config', '-c', type=str, default="build.yml", help='Path to the build configuration file (YAML format).')
@@ -14,6 +15,7 @@ def main():
     argparser.add_argument('--no-run', action='store_true', help='Load the project and display the selected rules without executing them.')
     argparser.add_argument('--variable', '-D', action='append', help='Define a variable, two formats are allowed: NAME=VALUE, or NAME, in which case VALUE is taken from the environment variable NAME (not that this cause VALUE to be empty if NAME is not defined in the environment).', default=[])
     argparser.add_argument('--force-reload', '--force', '-f', action='store_true', help='Force reloading of all files, ignoring any caches.')
+    argparser.add_argument('--interactive', '-i', action='store_true', help='Run in interactive mode.')
     config_argparse(argparser)
     
     args = argparser.parse_args()
@@ -41,10 +43,15 @@ def main():
         
     rules = project.select_rules(rules_patterns, tags)
         
+    if args.interactive:
+        shell = InteractiveShell(project)
+        shell.cmdloop()
+        sys.exit(0)
+        
     if args.no_run:
         Logger.info('Selected rules:')
-        for rule in rules:
-            Logger.info(f' - {rule.name}')
+        for name, rule in rules.items():
+            Logger.info(f' - {name}')
         sys.exit(0)
         
     try:
