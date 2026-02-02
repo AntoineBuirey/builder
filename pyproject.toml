@@ -6,7 +6,7 @@ authors = [
     {name = "Antoine",email = "91411073+T0ine34@users.noreply.github.com"}
 ]
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = [
     "pyyaml (>=6.0.3,<7.0.0)",
     "gamulogger (>=3.2.6,<4.0.0)"
