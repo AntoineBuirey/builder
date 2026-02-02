@@ -24,7 +24,7 @@ class TestCommandExecute:
         """Test successful command execution in silent mode."""
         mock_run_command.return_value = None
         
-        cmd = Command('@silent echo "test"')
+        cmd = Command('+silent echo "test"')
         assert cmd.metadata.silent is True
         cmd.execute()
         
@@ -68,7 +68,7 @@ class TestCommandExecute:
         error = sp.CalledProcessError(2, 'cmd', stderr='detailed error output')
         mock_run_command.side_effect = error
         
-        cmd = Command('@silent failing_cmd')
+        cmd = Command('+silent failing_cmd')
         assert cmd.metadata.silent is True
         
         with pytest.raises(CommandExecutionError):
@@ -85,7 +85,7 @@ class TestCommandExecute:
         """Test execution with @always-run macro."""
         mock_run_command.return_value = None
         
-        cmd = Command('@always-run ls -la')
+        cmd = Command('+always ls -la')
         assert cmd.metadata.always_run is True
         assert cmd.command == 'ls -la'
         cmd.execute()
@@ -97,7 +97,7 @@ class TestCommandExecute:
         """Test execution with both @always-run and @silent macros."""
         mock_run_command.return_value = None
         
-        cmd = Command('@always-run @silent echo "test"')
+        cmd = Command('+always +silent echo "test"')
         assert cmd.metadata.always_run is True
         assert cmd.metadata.silent is True
         assert cmd.command == 'echo "test"'
@@ -172,7 +172,7 @@ class TestCommandExecute:
         error = sp.CalledProcessError(127, 'cmd', stderr='command not found')
         mock_run_command.side_effect = error
         
-        cmd = Command('@silent nonexistent_command')
+        cmd = Command('+silent nonexistent_command')
         
         with pytest.raises(CommandExecutionError):
             cmd.execute()
@@ -182,7 +182,7 @@ class TestCommandExecute:
         """Test execution with empty command after macro stripping."""
         mock_run_command.return_value = None
         
-        cmd = Command('@always-run  @silent   ')
+        cmd = Command('+always  +silent   ')
         # Command should be empty string after macro stripping
         assert cmd.command == ''
         cmd.execute()
