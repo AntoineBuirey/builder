@@ -9,7 +9,6 @@ from builder.uses import (
     is_project_file,
     FilesLoaders,
 )
-import builder.uses as uses_module
 
 
 @pytest.fixture

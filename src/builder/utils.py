@@ -5,7 +5,7 @@ from gamuLogger import Logger
 
 def get_max_edit_time(files: Iterable[str]) -> float:
     """Get the last edited time among an iterable of files."""
-    return max(os.path.getmtime(f) for f in files if os.path.exists(f))
+    return max((os.path.getmtime(f) for f in files if os.path.exists(f)), default=0.0)
 
 def files_exists(files: Iterable[str]) -> bool:
     """Check if all files in the iterable exist."""

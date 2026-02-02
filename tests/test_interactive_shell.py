@@ -1,7 +1,8 @@
+# type: ignore[reportAttributeAccessIssue]import pytest
+
 import pytest
 import io
-import sys
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import Mock
 from contextlib import redirect_stdout, redirect_stderr
 
 from builder.interactive_shell import InteractiveShell

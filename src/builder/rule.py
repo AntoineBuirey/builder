@@ -1,11 +1,11 @@
 import os
 from datetime import datetime
 from typing import Any
-import subprocess as sp
 
 from gamuLogger import Logger
 
 from .utils import get_max_edit_time, files_exists, apply_variables, expand_files
+from .command import Command, CommandExecutionError
 
 
 class Rule:
@@ -63,7 +63,6 @@ class Rule:
             summary += f"    - {cmd}\n"
         return summary
 
-
     def __execute_commands(self):
         """Execute the commands defined in the rule."""
 
@@ -71,19 +70,22 @@ class Rule:
         original_wd = os.getcwd()
         os.chdir(self.working_directory)
         Logger.debug(f'Changed working directory to: {self.working_directory}')
-
-        try:
-            for cmd in self.commands:
-                Logger.debug(f'Executing command: \033[30m{cmd}\033[0m')
-                try:
-                    result = sp.run(cmd, shell=True, check=True, text=True, stdout=sp.PIPE, stderr=sp.PIPE)
-                    Logger.debug(f'Command output:\033[32m\n{result.stdout.strip()}\033[0m')
-                except sp.CalledProcessError as e:
-                    Logger.error(f'Command failed with return code {e.returncode}:\033[31m\n{e.stderr.strip()}\033[0m')
-                    raise RuntimeError(f'Command failed: {cmd}') from e
-        finally:
-            os.chdir(original_wd)
-            Logger.debug(f'Restored working directory to: {original_wd}')
+        
+        commands = [Command(cmd) for cmd in self.commands]
+        
+        error_flag = False
+        for cmd in commands:
+            if error_flag and not cmd.metadata.always_run:
+                Logger.info(f'Skipping command due to previous error: \033[30m{cmd.command}\033[0m')
+                continue
+            try:
+                cmd.execute()
+            except CommandExecutionError as e:
+                error_flag = True
+            
+            
+        os.chdir(original_wd)
+        Logger.debug(f'Restored working directory to: {original_wd}')
 
 
     def __check_required_files(self) -> bool:

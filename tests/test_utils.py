@@ -3,7 +3,6 @@ import os
 import tempfile
 import time
 from pathlib import Path
-from typing import Any
 
 from builder.utils import (
     get_max_edit_time,
@@ -82,10 +81,10 @@ class TestGetMaxEditTime:
         
         assert max_time == expected_time
     
-    def test_empty_list_raises_error(self):
+    def test_empty_list_return_0(self):
         """Test with empty list."""
-        with pytest.raises(ValueError):
-            get_max_edit_time([])
+        
+        assert get_max_edit_time([]) == 0
     
     def test_all_nonexistent_files_raises_error(self, temp_dir):
         """Test when all files are nonexistent."""
@@ -94,8 +93,7 @@ class TestGetMaxEditTime:
             os.path.join(temp_dir, 'missing2.txt')
         ]
         
-        with pytest.raises(ValueError):
-            get_max_edit_time(nonexistent_files)
+        assert get_max_edit_time(nonexistent_files) == 0
 
 
 class TestFilesExists:

@@ -1,6 +1,7 @@
 import os
 import sys
 import argparse
+import traceback
 
 from gamuLogger import Logger, config_argparse, config_logger
 
@@ -57,5 +58,6 @@ def main():
     try:
         project.run(rules, force=args.force_reload)
     except Exception as e:
-        Logger.fatal(f'Build failed: {e}')
+        Logger.fatal(f'Build failed: {e.__class__.__name__}: {e}')
+        Logger.debug(traceback.format_exc())
         sys.exit(1)

@@ -26,7 +26,10 @@ class Project:
         
         variables = { # Add default variables
             'PROJECT_DIR': project_dir,
-            'PYTHON': sys.executable
+            'PYTHON': sys.executable,
+            'PLATFORM': sys.platform,
+            'USER': os.getenv('USER', ''),
+            'HOME_DIR': os.path.expanduser('~')
         }
         
         self.vars = {}
@@ -63,7 +66,7 @@ class Project:
         self.rules : dict[str, Rule] = {}
         for name in rules:
             Logger.debug(f'Loading rule: \033[33m{name}\033[0m')
-            self.rules[name] = Rule(name, rules[name], self.vars, self.files_groups)
+            self.rules[name] = Rule(name, rules[name], self.get_all_vars(), self.files_groups)
             
     def __load_config_file(self, imp: dict[str, str], path: str):
         data = load_project_file(path)
@@ -225,7 +228,9 @@ class Project:
     def get_all_vars(self) -> dict[str, str]:
         """Get all project variables, including imported ones."""
         all_vars = dict(self.vars)  # Start with local vars
-        Logger.debug(f"Imports found: {list(self.imports.keys())}")
+        if not self.imports: # fail-fast
+            return all_vars
+        Logger.trace(f"Imports found: {list(self.imports.keys())}")
         for alias, import_obj in self.imports.items():
             imported_vars = import_obj.get_all_vars()
             imported_vars = {f'{alias}.{k}': v for k, v in imported_vars.items()}

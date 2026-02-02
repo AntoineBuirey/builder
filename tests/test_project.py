@@ -1,13 +1,11 @@
+# type: ignore[reportAttributeAccessIssue]import pytest
+
 import pytest
 import os
 import sys
 import tempfile
 import yaml
-import json
-import subprocess
-from pathlib import Path
-from unittest.mock import Mock, MagicMock, patch, call
-from gamuLogger import Logger
+from unittest.mock import patch
 
 from builder.project import Project
 from builder.rule import Rule
